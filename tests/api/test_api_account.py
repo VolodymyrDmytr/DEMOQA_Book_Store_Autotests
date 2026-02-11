@@ -16,12 +16,13 @@ def test_success_registration(api):
     r = api.register(*api.user_data)
     body = r.json()
     logger.debug('test_success_registration, register response body: %s', body)
-    user_id = body['userID']
 
     assert r.status_code == HTTPStatus.CREATED.value
-    assert body['username'] == api['username']
+    assert body['username'] == api.username
 
-    api.delete_user_after_test(api['username'], api['password'], user_id)
+    r = api.login(*api.user_data)
+    body = r.json()
+    api.delete_user(body['userId'], body['token'])
 
 
 @pytest.mark.api
@@ -38,7 +39,7 @@ def test_success_registration(api):
     ],
 )
 def test_registration_with_incorrect_password(api, password):
-    r = api.register(api['username'], password)
+    r = api.register(api.username, password)
     body = r.json()
 
     assert r.status_code == HTTPStatus.BAD_REQUEST.value
@@ -66,13 +67,14 @@ def test_registration_without_data(api, username, password):
 
 @pytest.mark.api
 @pytest.mark.api_account
-@pytest.mark.api_account_login
+@pytest.mark.api_account_generate_token
 @pytest.mark.positive
 def test_success_login(api):
     logger.debug('Success_login. Username: %s, password: %s',
                  *api.user_data)
     r = api.register(*api.user_data)
     logger.debug('Register response(success login test): %s', r.json())
+    api.generate_token(*api.user_data)
     r = api.login(*api.user_data)
     body = r.json()
     token = body['token']
@@ -87,39 +89,39 @@ def test_success_login(api):
 
 @pytest.mark.api
 @pytest.mark.api_account
-@pytest.mark.api_account_login
+@pytest.mark.api_account_generate_token
 @pytest.mark.negative
-def test_login_with_unregistered_data(api):
-    r = api.login(*api.user_data)
+def test_generate_token_with_unregistered_data(api):
+    r = api.generate_token(*api.user_data)
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
-    assert body['token'] in None
-    assert body['expires'] in None
+    assert body['token'] is None
+    assert body['expires'] is None
     assert body['status'] == 'Failed'
     assert body['result'] == const.failed_auth
 
 
 @pytest.mark.api
 @pytest.mark.api_account
-@pytest.mark.api_account_login
+@pytest.mark.api_account_generate_token
 @pytest.mark.negative
-def test_login_with_incorrect_password(api_user):
+def test_generate_token_with_incorrect_password(my_user):
     incorrect_password = correct_password()
 
-    r = api_user.login(api_user['username'], incorrect_password)
+    r = my_user.generate_token(my_user.username, incorrect_password)
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
-    assert body['token'] in None
-    assert body['expires'] in None
+    assert body['token'] is None
+    assert body['expires'] is None
     assert body['status'] == 'Failed'
     assert body['result'] == const.failed_auth
 
 
 @pytest.mark.api
 @pytest.mark.api_account
-@pytest.mark.api_account_login
+@pytest.mark.api_account_generate_token
 @pytest.mark.negative
 @pytest.mark.parametrize(
     'username, password',
@@ -127,8 +129,8 @@ def test_login_with_incorrect_password(api_user):
      (None, correct_password()),
      (None, None)],
 )
-def test_login_without_data(api, username, password):
-    r = api.login(username, password)
+def test_generate_token_without_data(api, username, password):
+    r = api.generate_token(username, password)
     body = r.json()
 
     assert r.status_code == HTTPStatus.BAD_REQUEST.value
@@ -138,14 +140,45 @@ def test_login_without_data(api, username, password):
 
 @pytest.mark.api
 @pytest.mark.api_account
-@pytest.mark.api_account_is_authorized
+@pytest.mark.api_account_login
 @pytest.mark.positive
-def test_user_is_not_authorized(api_user):
-    r = api_user.is_authorized(*api_user.user_data)
+def test_successfull_login(my_user):
+    r = my_user.login(*my_user.user_data)
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
-    assert body == 'false'
+    assert body['userId'] == my_user.user_id
+    assert body['username'] == my_user.username
+    assert body['token'] == my_user.token
+
+
+@pytest.mark.api
+@pytest.mark.api_account
+@pytest.mark.api_account_login
+@pytest.mark.negative
+@pytest.mark.parametrize(
+    'username, password',
+    [(faker.name(), correct_password()), (faker.name(), None),
+     (None, correct_password()), (None, None)],
+)
+def test_unsuccessfull_login(api, username, password):
+    r = api.login(username, password)
+
+    assert r.status_code == HTTPStatus.OK.value
+    assert r.text == ""
+
+
+@pytest.mark.api
+@pytest.mark.api_account
+@pytest.mark.api_account_is_authorized
+@pytest.mark.positive
+def test_user_is_not_authorized(api):
+    api.register(*api.user_data)
+    r = api.is_authorized(*api.user_data)
+    body = r.json()
+
+    assert r.status_code == HTTPStatus.OK.value
+    assert body is False
 
 
 @pytest.mark.api
@@ -153,13 +186,11 @@ def test_user_is_not_authorized(api_user):
 @pytest.mark.api_account_is_authorized
 @pytest.mark.positive
 def test_user_is_authorized(api_user):
-    api_user.login(*api_user.user_data)
-
     r = api_user.is_authorized(*api_user.user_data)
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
-    assert body == 'true'
+    assert body is True
 
 
 @pytest.mark.api
@@ -207,8 +238,8 @@ def test_get_user_data_success(api_user):
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
-    assert body['username'] == api_user['username']
-    assert body['userID'] == user_id
+    assert body['username'] == api_user.username
+    assert body['userId'] == user_id
 
 
 @pytest.mark.api
@@ -226,7 +257,7 @@ def test_get_user_not_authorized(api):
     assert body['code'] == '1200'
     assert body['message'] == const.no_auth
 
-    r = api.login(api['username'], api['password'])
+    r = api.login(*api.user_data)
     token = r.json()['token']
     api.delete_user(user_id, token)
 
@@ -241,12 +272,8 @@ def test_get_user_not_authorized(api):
      '81719c87-1617-41ba-ace-aa74311', '81719c87-161-41ba-ace9-aa74311',
      '81719c8-1617-41ba-ace9-aa74311'],
 )
-def test_get_user_with_incorrect_user_id(api_user, user_id_to_delete):
-    r = api_user.login(*api_user.user_data)
-    body = r.json()
-    token = body['token']
-
-    r = api_user.get_user(user_id_to_delete, token)
+def test_get_user_with_incorrect_user_id(my_user, user_id_to_delete):
+    r = my_user.get_user(user_id_to_delete, my_user.token)
     body = r.json()
 
     assert r.status_code == HTTPStatus.UNAUTHORIZED.value
@@ -258,64 +285,55 @@ def test_get_user_with_incorrect_user_id(api_user, user_id_to_delete):
 @pytest.mark.api_account
 @pytest.mark.api_account_delete
 @pytest.mark.positive
-def test_success_delete(api_user):
-    r = api_user.login(*api_user.user_data)
+def test_success_delete(api):
+    api.register(*api.user_data)
+    api.generate_token(*api.user_data)
+    r = api.login(*api.user_data)
     body = r.json()
-    user_id = body['userID']
+    user_id = body['userId']
     token = body['token']
 
-    r = api_user.delete_user(user_id, token)
+    r = api.delete_user(user_id, token)
 
     assert r.status_code == HTTPStatus.NO_CONTENT.value
-    assert r.json() is None
+    assert r.text == ""
 
 
 @pytest.mark.api
 @pytest.mark.api_account
 @pytest.mark.api_account_delete
 @pytest.mark.negative
-def test_delete_twice(api_user):
+def test_delete_twice(my_user):
     username = faker.name()
     password = correct_password()
 
     # user to delete twice
-    api_user.register(username, password)
-    r = api_user.login(username, password)
+    my_user.register(username, password)
+    r = my_user.login(username, password)
     body = r.json()
     user_id = body['userId']
 
-    # user who will deleting first one
-    r = api_user.login(*api_user.user_data)
-    body = r.json()
-    token = body['token']
-
-    api_user.delete_user(user_id, token)
-    r = api_user.delete_user(user_id, token)
+    my_user.delete_user(user_id, my_user.token)
+    r = my_user.delete_user(user_id, my_user.token)
     body = r.json()
 
-    assert r.status_code == HTTPStatus.OK.value
-    assert body['code'] == '1207'
-    assert body['message'] == const.incorrect_user_id
+    assert r.status_code == HTTPStatus.UNAUTHORIZED.value
+    assert body['code'] == '1200'
+    assert body['message'] == const.no_auth
 
 
 @pytest.mark.api
 @pytest.mark.api_account
 @pytest.mark.api_account_delete
 @pytest.mark.negative
-@pytest.mark.debug
 @pytest.mark.parametrize(
     'user_id',
     ['81719c87-1617-41ba-ace9-aa7431', '81719c87-1617-41b-ace9-aa74311',
      '81719c87-1617-41ba-ace-aa74311', '81719c87-161-41ba-ace9-aa74311',
      '81719c8-1617-41ba-ace9-aa74311'],
 )
-def test_delete_with_incorrect_user_id(api_user, user_id):
-    logger.debug('User data: %s, %s', *api_user.user_data)
-    r = api_user.login(*api_user.user_data)
-    body = r.json()
-    token = body['token']
-
-    r = api_user.delete_user(user_id, token)
+def test_delete_with_incorrect_user_id(my_user, user_id):
+    r = my_user.delete_user(user_id, my_user.token)
     body = r.json()
 
     assert r.status_code == HTTPStatus.OK.value
@@ -327,11 +345,8 @@ def test_delete_with_incorrect_user_id(api_user, user_id):
 @pytest.mark.api_account
 @pytest.mark.api_account_delete
 @pytest.mark.negative
-def test_delete_without_token(api_user):
-    r = api_user.login(*api_user.user_data)
-    user_id = r.json()['userId']
-
-    r = api_user.delete_user(user_id, None)
+def test_delete_without_token(my_user):
+    r = my_user.delete_user(my_user.user_id, None)
     body = r.json()
     logger.debug('''test_delete_without_token. delete body response:
                  %s

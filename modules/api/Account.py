@@ -36,7 +36,7 @@ class Account:
             'userName': name,
             'password': password,
         }
-        r = requests.post(f'{self.URL_account}/Authorized', data=data)
+        r = requests.post(f'{self.URL_account}/Authorized', json=data)
         return r
 
     def login(
@@ -48,7 +48,7 @@ class Account:
             'userName': name,
             'password': password,
         }
-        r = requests.post(f'{self.URL_account}/Login', data=data)
+        r = requests.post(f'{self.URL_account}/Login', json=data)
         return r
 
     def generate_token(
@@ -60,7 +60,7 @@ class Account:
             'userName': name,
             'password': password,
         }
-        r = requests.post(f'{self.URL_account}/GenerateToken', data=data)
+        r = requests.post(f'{self.URL_account}/GenerateToken', json=data)
         return r
 
     def register(
@@ -96,7 +96,6 @@ class Account:
         }
         r = requests.delete(f'{self.URL_account}/User/{user_id}',
                             headers=header)
-        logger.debug('Delete response body: %s', r.json())
         logger.debug('Delete response header: %s', r.headers)
         return r
 
