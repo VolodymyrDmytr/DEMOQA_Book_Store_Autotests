@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 def test_books_list(api):
     r = api.get_books_list()
     body = r.json()
+    body = body['books']
 
     assert r.status_code == HTTPStatus.OK.value
-    assert len(body) == 9
+    assert len(body) == 8
 
-    for i in range(len(body)-1):
-        assert body[i].keys() == const.books_fields
+    for book in body:
+        assert list(book.keys()) == const.books_fields
 
 
 @pytest.mark.api
@@ -31,10 +32,12 @@ def test_get_book(api):
 
     r = api.get_books_list()
     body = r.json()
-    book_in_list = body[random_book['book_number']]
+    book_in_list = body['books'][random_book['book_number']]
+    logger.debug('Book in list: %s', book_in_list)
 
     r = api.get_book(random_book['book_id'])
     body = r.json()
+    logger.debug('Book by id: %s', body)
 
     assert r.status_code == HTTPStatus.OK.value
 
@@ -48,7 +51,7 @@ def test_get_book(api):
 @pytest.mark.negative
 def test_get_unexisting_book(api):
     book_id = api.get_unexisting_book_id()
-
+    logger.debug('Unexisting book isbn: %s', book_id)
     r = api.get_book(book_id)
     body = r.json()
 
@@ -63,7 +66,7 @@ def test_get_unexisting_book(api):
 @pytest.mark.positive
 def test_adding_books_in_users_list_and_check_them_in_users_list(my_user):
     books_id_list, books_number_list = my_user.get_random_books_list(3)
-
+    logger.debug('Random books id list: %s', books_id_list)
     # Adding books
     r = my_user.post_users_books_list(
         my_user.user_id, books_id_list, my_user.token)
@@ -71,24 +74,20 @@ def test_adding_books_in_users_list_and_check_them_in_users_list(my_user):
 
     assert r.status_code == HTTPStatus.CREATED.value
 
-    for i in range(len(body)):
+    for i in range(len(body)-1):
         assert body[i]['isbn'] == books_id_list[i]
 
     # Checking books presence and data correctness in users list
-    r = my_user.get_user(my_user.user_id, my_user.token)
-    body = r.json()
-    users_books = body['books']
+    users_books = my_user.get_users_books(my_user.user_id, my_user.token)
 
-    assert r.status_code == HTTPStatus.OK.value
+    all_books_list = my_user.get_all_books_list()
 
-    r = my_user.get_books_list()
-    all_books_list = r.json()
-
-    for i in range(users_books):
-        for element in users_books:
-            for keys in const.books_fields:
-                assert (element[i][keys] ==
-                        all_books_list[books_number_list[i]][keys])
+    for i in range(len(users_books)-1):
+        keys = users_books[i].keys()
+        users_current_book = users_books[i]
+        current_book_in_list = all_books_list[books_number_list[i]]
+        for key in keys:
+            assert users_current_book[key] == current_book_in_list[key]
 
     my_user.delete_all_users_books(my_user.user_id, my_user.token)
 
@@ -116,19 +115,13 @@ def test_deleting_book_from_users_list(my_user):
     assert r.status_code == HTTPStatus.NO_CONTENT.value
     assert r.text == ""
 
-    # Check that book still exist in all books list
-    r = my_user.get_books_list()
-    all_books_list = r.json()
+    all_books_list = my_user.get_all_books_list()
 
     assert all_books_list[book_number_to_delete]['isbn'] == book_id_to_delete
 
-    r = my_user.get_user(my_user.user_id, my_user.token)
-    body = r.json()
-    users_book_list = body['books']
+    users_book_list = my_user.get_users_books(my_user.user_id, my_user.token)
 
-    assert r.status_code == HTTPStatus.OK.value
-
-    for i in range(len(users_book_list)):
+    for i in range(len(users_book_list)-1):
         for element in users_book_list:
             for key in const.books_fields:
                 element[i][key] == all_books_list[books_number_list[i]][key]
@@ -172,10 +165,7 @@ def test_deleting_all_users_books(my_user):
     assert r.status_code == HTTPStatus.NO_CONTENT.value
     assert r.text == ""
 
-    r = my_user.get_user(my_user.user_id, my_user.token)
-    body = r.json()
-
-    assert body['books'] == []
+    assert my_user.get_users_books(my_user.user_id, my_user.token) == []
 
 
 @pytest.mark.api
@@ -202,7 +192,7 @@ def test_changing_users_book(my_user):
     random_book_1 = my_user.get_random_book()
 
     my_user.post_users_books_list(
-        my_user.user_id, {"isbn": random_book_1['book_id']}, my_user.token)
+        my_user.user_id, [random_book_1['book_id']], my_user.token)
 
     result = False
     while result is False:
@@ -220,16 +210,14 @@ def test_changing_users_book(my_user):
 
     assert r.status_code == HTTPStatus.OK.value
 
-    r = my_user.get_books_list()
-    all_books_list = r.json()
-    changed_book = all_books_list[random_book_2['book_number']]
+    changed_book = my_user.get_all_books_list()[random_book_2['book_number']]
 
-    r = my_user.get_user(my_user.user_id, my_user.token)
-    body = r.json()
-    users_book = body['books'][0]
+    users_book = my_user.get_users_books(my_user.user_id, my_user.token)[0]
 
     for key in const.books_fields:
         assert users_book[key] == changed_book[key]
+
+    my_user.delete_all_users_books(my_user.user_id, my_user.token)
 
 
 @pytest.mark.api
@@ -237,9 +225,10 @@ def test_changing_users_book(my_user):
 @pytest.mark.negative
 def test_changing_users_book_on_the_same(my_user):
     random_book = my_user.get_random_book()
+    add_list = [random_book['book_id']]
 
     my_user.post_users_books_list(
-        my_user.user_id, {"isbn": random_book['book_id']}, my_user.token)
+        my_user.user_id, add_list, my_user.token)
 
     r = my_user.change_book_in_users_book_list(
         my_user.user_id,
@@ -247,19 +236,21 @@ def test_changing_users_book_on_the_same(my_user):
         random_book['book_id'],
         my_user.token
     )
-
-    assert r.status_code == HTTPStatus.OK.value
-
-    r = my_user.get_books_list()
-    all_books_list = r.json()
-    changed_book = all_books_list[random_book['book_number']]
-
-    r = my_user.get_user(my_user.user_id, my_user.token)
     body = r.json()
-    users_book = body['books'][0]
+    logger.debug('Response body: %s', r.text)
+    logger.debug('Books id: %s', random_book['book_id'])
+    assert r.status_code == HTTPStatus.BAD_REQUEST.value
+    assert body['code'] == '1206'
+    assert body['message'] == const.no_such_book_in_users_book_list
+
+    current_book = my_user.get_all_books_list()[random_book['book_number']]
+
+    users_book = my_user.get_users_books(my_user.user_id, my_user.token)[0]
 
     for key in const.books_fields:
-        assert users_book[key] == changed_book[key]
+        assert users_book[key] == current_book[key]
+
+    my_user.delete_all_users_books(my_user.user_id, my_user.token)
 
 
 @pytest.mark.api
@@ -269,7 +260,7 @@ def test_changing_users_book_on_unexisting(my_user):
     random_book = my_user.get_random_book()
 
     my_user.post_users_books_list(
-        my_user.user_id, {"isbn": random_book['book_id']}, my_user.token)
+        my_user.user_id, [random_book['book_id']], my_user.token)
 
     r = my_user.change_book_in_users_book_list(
         my_user.user_id,
@@ -277,16 +268,17 @@ def test_changing_users_book_on_unexisting(my_user):
         my_user.get_unexisting_book_id(),
         my_user.token
     )
-
-    assert r.status_code == HTTPStatus.OK.value
-
-    r = my_user.get_books_list()
-    all_books_list = r.json()
-    changed_book = all_books_list[random_book['book_number']]
-
-    r = my_user.get_user(my_user.user_id, my_user.token)
     body = r.json()
-    users_book = body['books'][0]
+
+    assert r.status_code == HTTPStatus.BAD_REQUEST.value
+    assert body['code'] == '1205'
+    assert body['message'] == const.no_such_book_in_books_list
+
+    changed_book = my_user.get_all_books_list()[random_book['book_number']]
+
+    users_book = my_user.get_users_books(my_user.user_id, my_user.token)[0]
 
     for key in const.books_fields:
         assert users_book[key] == changed_book[key]
+
+    my_user.delete_all_users_books(my_user.user_id, my_user.token)

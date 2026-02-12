@@ -20,7 +20,7 @@ class BookStore(Account):
             self,
             book_id: str,
     ) -> requests.Response:
-        r = requests.get(f'{self.URL_book_store}/Books?UserId={book_id}')
+        r = requests.get(f'{self.URL_book_store}/Book?ISBN={book_id}')
         return r
 
     def post_users_books_list(
@@ -31,9 +31,9 @@ class BookStore(Account):
     ) -> requests.Response:
         formatted_id_list = []
         for element in id_list:
-            formatted_id_list.append(
-                '{' + f"'isbn': {element}" + '}')
-        logger.debug('formatted list: %s', formatted_id_list)\
+            isbn_dict = {'isbn': element}
+            formatted_id_list.append(isbn_dict)
+        logger.debug('formatted list: %s', formatted_id_list)
 
         header = {
             'Authorization': f'Bearer {token}',
@@ -45,7 +45,7 @@ class BookStore(Account):
         }
         logger.debug('post books method data: %s', data)
 
-        r = requests.post(f'{self.URL_book_store}/Book',
+        r = requests.post(f'{self.URL_book_store}/Books',
                           headers=header, json=data)
         return r
 
@@ -93,8 +93,8 @@ class BookStore(Account):
         }
 
         data = {
-            'userId': user_id,
-            'isbn': book_id_new,
+            'userId': str(user_id),
+            'isbn': str(book_id_new),
         }
 
         r = requests.put(f'{self.URL_book_store}/Books/{book_id_old}',
@@ -102,9 +102,10 @@ class BookStore(Account):
         return r
 
     def get_random_book(self):
-        """Returns dict with 'book_id' and it`s 'book_bumber'"""
+        """Returns dict with 'book_id' and it`s 'book_number'"""
         r = self.get_books_list()
         body = r.json()
+        body = body['books']
         books_count = len(body)
 
         rand_int = random.randint(0, books_count-1)
@@ -118,6 +119,7 @@ class BookStore(Account):
 
         return result
 
+    # Supporting methods
     def get_random_books_list(self, books_count: int) -> list:
         """Returns 2 lists, with their id and number in book list"""
         books_id_list = []
@@ -125,6 +127,7 @@ class BookStore(Account):
 
         r = self.get_books_list()
         body = r.json()
+        body = body['books']
 
         if books_count > len(body):
             logger.info(
@@ -133,20 +136,43 @@ class BookStore(Account):
                 books_count, len(body))
             books_count = len(body)
 
-        for i in range(books_count):
-            random_book = self.get_random_book()
+        for i in range(books_count - 1):
+            check = False
+            while check is False:
+                random_book = self.get_random_book()
 
-            if random_book['book_id'] not in books_id_list:
-                books_id_list.append({'isbn': random_book['book_id']})
-                books_number_list.append(random_book['book_number'])
+                if random_book['book_id'] not in books_id_list:
+                    books_id_list.append(random_book['book_id'])
+                    books_number_list.append(random_book['book_number'])
+                    check = True
 
         return books_id_list, books_number_list
 
     def get_unexisting_book_id(self) -> str:
         r = self.get_books_list()
         body = r.json()
+        body = body['books']
         body_len = len(body)
 
         book_id = body[body_len-1]['isbn'] + '1'
 
         return book_id
+
+    def get_all_books_list(self) -> list:
+        """Returns books list"""
+        r = self.get_books_list()
+        body = r.json()
+        books = body['books']
+
+        return books
+
+    def get_users_books(
+            self,
+            user_id: str,
+            token: str,
+    ) -> list:
+        r = self.get_user(user_id, token)
+        body = r.json()
+        users_books = body['books']
+
+        return users_books

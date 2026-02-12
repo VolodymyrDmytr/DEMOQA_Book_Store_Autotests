@@ -5,7 +5,8 @@ faker = Faker()
 # Faker.seed(123)
 
 correct_password_setting = (15, True, True, True, True)
-password_pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9_+\\[\\]\\{\\}\\(\\)]).{8,}$"
+password_pattern = ("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*["
+                    + "^a-zA-Z0-9_+\\[\\]\\{\\}\\(\\)]).{8,}$")
 
 
 def correct_password() -> str:

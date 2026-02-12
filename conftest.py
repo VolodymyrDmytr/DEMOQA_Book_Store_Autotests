@@ -1,6 +1,5 @@
 from modules.api.BookStore import BookStore
 from http import HTTPStatus
-from time import sleep
 
 import pytest
 
