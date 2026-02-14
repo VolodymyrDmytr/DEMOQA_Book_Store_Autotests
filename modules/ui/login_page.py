@@ -1,6 +1,4 @@
-from modules.ui.BasePage import BasePage
-from selenium.webdriver.support import wait
-from selenium.webdriver.support import expected_conditions as ac
+from modules.ui.base_page import BasePage
 import logging
 
 from modules.ui.ui_constants import const
@@ -9,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class LoginPage(BasePage):
-    URL = const.login_url
+    page_id_dict = const.login_page_id
 
     def __init__(self):
         super().__init__()
@@ -40,27 +38,19 @@ class LoginPage(BasePage):
         r = self.driver.find_element(*const.login_page_id['profile_href'])
         r.click()
 
-    def check_element_absence(
+    def check_is_error_in_field_login(
             self,
-            element: str,
+            field_name: str,
     ) -> bool:
-        """Returns True, if element is invisible"""
-        pass
-
-    def _get_element_id_by_element_name(
-            self,
-            element_name: str
-    ) -> set | False:
-        keys = const.login_page_id
-
-        if element_name not in keys:
-            logger.warning(
-                'No such name element in login_page_id dict constant')
-            return False
-
-        r = wait.WebDriverWait(self.driver, 5).until(
-            ac.invisibility_of_element_located(
-                const.login_page_id[element_name])
+        field_name = field_name.lower().strip() + 'field_id'
+        r = self.driver.find_element(
+            *const.register_page_id[field_name]
         )
 
-        return r
+        return 'is-invalid' in r.get_attribute('class')
+
+    def check_error_text(self) -> bool:
+        r = self.driver.find_element(*const.login_page_id['error_message'])
+        text = r.text.strip()
+
+        return text == const.login_error_message

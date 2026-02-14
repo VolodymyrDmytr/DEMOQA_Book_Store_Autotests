@@ -1,13 +1,12 @@
-from selenium.webdriver.support.select import Select
-from modules.ui.BasePage import BasePage
+from modules.ui.base_page import BasePage
 from modules.ui.ui_constants import const
+from selenium.webdriver.support.wait import WebDriverWait
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class BookStore(BasePage):
-    URL = const.book_store_url
+class Table(BasePage):
 
     def __init__(self):
         super().__init__()
@@ -34,43 +33,11 @@ class BookStore(BasePage):
     ) -> bool:
         """Returns True, if element is disable.
         Button var takes Next / Previous"""
-        button = button.lower().strip() + '_button_check_state'
+        button = button.lower().strip() + '_button'
 
         r = self.driver.find_element(*const.book_store_page_id[button])
         r = r.is_enabled()
         return r is False
-
-    def change_page(
-            self,
-            page: int,
-    ) -> None:
-        r = self.driver.find_element(*const.book_store_page_id['page_field'])
-        r.send_keys(page)
-
-    def check_page(
-            self,
-            exp_page: str | int,
-    ) -> bool:
-        """Returns True, if current page is expected"""
-        r = self.driver.find_element(*const.book_store_page_id['page_field'])
-
-        return r.text.lower().strip() == str(exp_page).lower().strip()
-
-    def select_row_number_on_page(
-            self,
-            rows_per_page: str,
-    ) -> None:
-        r = self.driver.find_elements(
-            *const.book_store_page_id['rows_per_page_options'])
-        if rows_per_page not in r.text:
-            logger.warning(
-                '''Choosed rows per page is not exist.
-                Choosed rows per page: %s''', rows_per_page),
-
-        r = self.driver.find_element(
-            *const.book_store_page_id['rows_per_page_select'])
-        select = Select(r)
-        select.select_by_value(rows_per_page)
 
     def check_is_book_expected(
             self,
@@ -108,17 +75,33 @@ class BookStore(BasePage):
 
     def click_book_link(
             self,
-            full_book_title: str,
+            book_title: str,
     ) -> None:
         by_element, text = const.book_store_page_id
         r = self.driver.find_element(
             by_element,
-            text.format(full_book_title)
+            text.format(book_title)
         )
         r.click()
 
-    def check_element_absence(
-            self,
-            element: str,
-    ) -> bool:
-        pass
+    def check_is_all_images_loaded(self) -> bool:
+        result_list = []
+        result = True
+
+        r = WebDriverWait(self.driver, 5).until(
+            lambda d: d.find_elements(*const.book_store_page_id['images'])
+        )
+
+        for i in range(len(r)-1):
+            result_list.append(
+                self.driver.execute_script(
+                    'return arguments[0].naturalWidth > 0', r[i]
+                )
+            )
+
+        for element in result_list:
+            if element is False:
+                result = False
+                break
+
+        return result
