@@ -1,5 +1,5 @@
 import requests
-from modules.api.Account import Account
+from modules.api.account import Account
 import logging
 import random
 

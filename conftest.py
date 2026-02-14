@@ -1,4 +1,4 @@
-from modules.api.BookStore import BookStore
+from modules.api.book_store import BookStore
 from http import HTTPStatus
 
 import pytest
