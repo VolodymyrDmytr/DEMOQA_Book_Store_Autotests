@@ -1,5 +1,4 @@
 from modules.ui.base_page import BasePage
-from modules.ui.table import Table
 from modules.ui.ui_constants import const
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -8,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class BookStore(BasePage, Table):
+class BookStore(BasePage):
     page_id_dict = const.book_store_page_id
 
     def __init__(self):
@@ -16,21 +15,24 @@ class BookStore(BasePage, Table):
 
     # Book page
     def _get_alert(self):
-        alert = WebDriverWait(self.driver, 7).until(
+        alert = WebDriverWait(self.driver, 10).until(
             ec.alert_is_present(),
         )
         return alert
 
     def press_back_to_store_button(self) -> None:
-        r = self.driver.find_element(
-            *self.page_id_dict['back_to_store_button']
+        r = WebDriverWait(self.driver, 5).until(
+            ec.element_to_be_clickable(
+                const.book_store_page_id['back_to_store_button'])
         )
         r.click()
 
     def press_add_to_collection_button(self) -> None:
-        r = self.driver.find_element(
-            *self.page_id_dict['Add_to_collection_button']
+        r = WebDriverWait(self.driver, 5).until(
+            ec.element_to_be_clickable(
+                const.book_store_page_id['Add_to_collection_button'])
         )
+        logger.info('Add to collection book was clicked')
         r.click()
 
     def check_alert_text(
@@ -40,6 +42,7 @@ class BookStore(BasePage, Table):
         """book_collection_status - is book already in collection"""
         alert = self._get_alert()
         text = alert.text
+        logger.debug('alert text (book page): %s', text)
 
         if book_collection_status is True:
             return text == const.alert_already_exist_in_collection
@@ -56,7 +59,13 @@ class BookStore(BasePage, Table):
             expected_text: str,
     ) -> bool:
         field_to_check = field_to_check.lower().strip() + '_id'
-        r = self.driver.find_elements(*const.book_store_page_id['text'])
-        actual_text = r[const.book_store_page_id[field_to_check]].text
+        r = WebDriverWait(self.driver, 5).until(
+            ec.visibility_of_all_elements_located(
+                const.book_store_page_id['text'])
+        )
+        r = r[const.book_store_page_id[field_to_check]]
+        actual_text = r.text
+        logger.debug('Field %s: %s', field_to_check, actual_text)
 
-        return actual_text == expected_text
+        return str(actual_text).lower().strip() == (
+            str(expected_text).lower().strip())

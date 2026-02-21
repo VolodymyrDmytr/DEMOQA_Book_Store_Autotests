@@ -1,6 +1,9 @@
 from modules.ui.base_page import BasePage
 import logging
-
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.common.exceptions import (TimeoutException,
+                                        StaleElementReferenceException)
 from modules.ui.ui_constants import const
 
 logger = logging.getLogger(__name__)
@@ -16,41 +19,73 @@ class LoginPage(BasePage):
             self,
             username: str,
     ) -> None:
-        r = self.driver.find_element(*const.login_page_id['username_field'])
+        r = WebDriverWait(self.driver, 5).until(
+            ec.visibility_of_element_located(
+                const.login_page_id['username_field'])
+        )
         r.send_keys(username)
 
     def fill_password_field(
             self,
             password: str,
     ) -> None:
-        r = self.driver.find_element(*const.login_page_id['password_field'])
+        r = WebDriverWait(self.driver, 5).until(
+            ec.visibility_of_element_located(
+                const.login_page_id['password_field'])
+        )
         r.send_keys(password)
 
     def press_login_button(self) -> None:
-        r = self.driver.find_element(*const.login_page_id['login_button'])
-        r.click()
+        while True:
+            try:
+                r = WebDriverWait(self.driver, 5).until(
+                    ec.element_to_be_clickable(
+                        const.login_page_id['login_button']))
+                logger.info('login button was found!')
+                r.click()
+                break
+            except StaleElementReferenceException:
+                logger.info('StaleElementReferenceException for login button')
 
-    def press_register_button(self) -> None:
-        r = self.driver.find_element(*const.login_page_id['register_button'])
-        r.click()
-
-    def press_profile_link(self) -> None:
-        r = self.driver.find_element(*const.login_page_id['profile_href'])
+    def press_register_button_login(self) -> None:
+        r = WebDriverWait(self.driver, 5).until(
+            ec.element_to_be_clickable(const.login_page_id['register_button']))
         r.click()
 
     def check_is_error_in_field_login(
             self,
             field_name: str,
     ) -> bool:
-        field_name = field_name.lower().strip() + 'field_id'
-        r = self.driver.find_element(
-            *const.register_page_id[field_name]
-        )
+        field_name = field_name.lower().strip() + '_field'
 
-        return 'is-invalid' in r.get_attribute('class')
+        try:
+            r = WebDriverWait(self.driver, 5).until(
+                lambda d: 'is-invalid' in d.find_element(
+                    *const.login_page_id[field_name]).get_attribute('class')
+            )
+            return r
+        except TimeoutException:
+            return False
 
     def check_error_text(self) -> bool:
-        r = self.driver.find_element(*const.login_page_id['error_message'])
+        r = WebDriverWait(self.driver, 5).until(
+            ec.visibility_of_element_located(
+                const.login_page_id['error_message'])
+        )
         text = r.text.strip()
 
         return text == const.login_error_message
+
+    def confirm_success_registered_alert(self) -> None:
+        r = WebDriverWait(self.driver, 5).until(
+            ec.alert_is_present()
+        )
+        r.accept()
+
+    def check_alert_success_register_text(self) -> bool:
+        r = WebDriverWait(self.driver, 5).until(
+            ec.alert_is_present()
+        )
+        text = r.text.strip()
+
+        return text == const.alert_success_register_text
