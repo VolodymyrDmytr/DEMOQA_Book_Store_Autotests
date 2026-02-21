@@ -25,5 +25,7 @@ def setup_logging():
     root_logger.addHandler(console_handler)
 
     logging.getLogger("faker").setLevel(logging.WARNING)
+    logging.getLogger("selenium").setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
 
     return root_logger
