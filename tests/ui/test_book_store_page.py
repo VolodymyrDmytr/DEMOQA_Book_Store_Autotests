@@ -1,7 +1,7 @@
 import pytest
 import logging
 from modules.ui.ui_constants import const
-from tests.test_data import data
+from modules.api.book_store import books, book_store
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +19,12 @@ def test_images_are_loaded(ui):
 @pytest.mark.positive
 @pytest.mark.parametrize(
     'search_data, exp_data',
-    [(data.books[0]['title'][:3], data.books[0]['title']),
-     (data.books[3]['author'][2:], data.books[3]['author']),
-     (data.books[6]['publisher'][:5], data.books[6]['publisher'])])
+    [(books[0]['title'][:3], books[0]['title']),
+     (books[3]['author'][2:], books[3]['author']),
+     (books[6]['publisher'][:5], books[6]['publisher'])])
 def test_success_search(ui, search_data, exp_data):
     ui.fill_search_field(search_data)
+    ui.wait_till_books_loaded()
     assert ui.check_is_book_expected(1, exp_data)
 
 
@@ -31,7 +32,7 @@ def test_success_search(ui, search_data, exp_data):
 @pytest.mark.ui_book_store
 @pytest.mark.negative
 @pytest.mark.parametrize(
-    'search_data', data.no_found_for_search)
+    'search_data', book_store.no_found_book_title_generator())
 def test_unsuccess_search(ui, search_data):
     ui.fill_search_field(search_data)
     assert ui.check_no_books_found()
@@ -57,7 +58,7 @@ def test_table_buttons_are_disabed(ui):
 @pytest.mark.ui_book_store
 @pytest.mark.positive
 @pytest.mark.parametrize(
-    'book_title', data.books
+    'book_title', books
 )
 def test_books_links(ui, book_title):
     ui.click_book_link(book_title['title'])

@@ -2,24 +2,30 @@
 API and UI test automation project for DemoQA Book Store using Pytest, Selenium, and Requests.
 
 Additional used libraries
- - logging
+ - Logging
  - Faker
  - Random
  - os
 
-There is a problem with delete all books button on profile page. So, tests are not stable.
-Also
- - capcha on register form
+Problems
+ - There is no user list to create method to make unique data for creating unique user.
+    Possibly, a local database can be created to handle users that have already been created.
+    Deleting test data is required during Autotests, but during debaging tests so users aren`t deleted.
+ - Captcha on the registration form
+ - Modal windows close after the books list loads. If modal is open
+ - Some Error messages exists just for a few moments (Register page)
+ - No normal transition to profile page
+ - After deleting an account and books in the modal, don`t perform aditional actions (e.g. the modal window does not disappear)
 
-# TODO change register in conftest to something else 
+Tests can be added
+ - Actions with invalid token
 
-# TODO after merging branches, add getting books can from server, not a constant
+Additional info
+ - Tests in test_url file is no more valid (Because of updates)
 
-# TODO after merging branches, add correct password generator to api tests
 
-# TODO move ui register in conftest to API part
-# TODO move ui deliting account in conftest to API part after branch merge
-# TODO make different fixtures for tests that requires new user and don`t
+Auto tests are relevant for the website version dated February 23, 2026.
+The site may behave differently after updates.
 
-# TODO add parametrize to test_profile_book_search after merging (Needs to generate)
-# TODO test_go_to_book_page (profile) add parametrize after brench merge
+Tests count: 112
+Passing time: 11 min 33 sec

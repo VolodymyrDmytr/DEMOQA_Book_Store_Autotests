@@ -105,6 +105,7 @@ def test_error_message_invisibility(ui_register):
 @pytest.mark.ui
 @pytest.mark.ui_registration
 @pytest.mark.negative
+@pytest.mark.debug
 def test_register_already_registered_user(ui_register):
     username = os.getenv('user_name')
     password = os.getenv('password')

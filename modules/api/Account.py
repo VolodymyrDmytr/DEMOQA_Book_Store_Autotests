@@ -18,19 +18,17 @@ class Account:
             name: str,
             password: str,
     ) -> requests.Response:
-        """
-        Docstring for is_authorized
-
+        """Sending request to check is user authorized.
         Returns True in response, if user is authorized
 
-        :param self:
-        :param name:
-        :type name: str
-        :param password: Min - 1 capital letter, 1 small letter,
-                        1 special char, 1 digit
-        :type password: str
-        :return:
-        :rtype: Request
+        Args:
+            name (str): Username.
+            password (str): Password (min: 1 uppercase, 1 lowercase,
+                1 special character, 1 digit).
+
+        Returns:
+            requests.Response: Response indicating whether the user is
+                authorized.
         """
         data = {
             'userName': name,
@@ -44,6 +42,21 @@ class Account:
             name: str,
             password: str,
     ) -> requests.Response:
+        """Send a request to log in a user.
+
+        Note:
+            The token in the login response will be None unless
+            `generate_token` was called first.
+
+        Args:
+            name (str): username
+            password (str): password
+
+        Returns:
+            requests.Response: userId(str), username(str), password(str),
+             token(str | None), expires(str | None), created_date(str),
+             isActive(bool)
+        """
         data = {
             'userName': name,
             'password': password,
@@ -56,6 +69,18 @@ class Account:
             name: str,
             password: str,
     ) -> requests.Response:
+        """Send a request to generate a user's token.
+
+        This request should be sent before `login` if a token is required.
+
+        Args:
+            name (str): username
+            password (str): password
+
+        Returns:
+            requests.Response: token(str), expires(str), status(str),
+             result(str)
+        """
         data = {
             'userName': name,
             'password': password,
@@ -68,6 +93,15 @@ class Account:
             name: str,
             password: str,
     ) -> requests.Response:
+        """Send a request to register a new user.
+
+        Args:
+            name (str): username
+            password (str): password
+
+        Returns:
+            requests.Response: userID(str), username(str), books(list)
+        """
         data = {
             'userName': name,
             'password': password,
@@ -80,16 +114,14 @@ class Account:
             user_id: str,
             token: str,
     ) -> requests.Response:
-        """
-        Docstring for delete_user
+        """Send a request to delete a user.
 
-        :param self:
-        :param user_id: ID of existing user
-        :type user_id: str
-        :param token: Bearer token
-        :type token: str
-        :return:
-        :rtype: Response
+        Args:
+            user_id (str): ID of existing user
+            token (str): Bearer token
+
+        Returns:
+            requests.Response: None in body
         """
         header = {
             'Authorization': f'Bearer {token}',
@@ -104,16 +136,14 @@ class Account:
             user_id: str,
             token: str,
     ) -> requests.Response:
-        """
-        Docstring for get_user
+        """Send a request to retrieve information about a specific user.
 
-        :param self:
-        :param user_id: ID of existing user
-        :type user_id: str
-        :param token: Bearer token
-        :type token: str
-        :return:
-        :rtype: Response
+        Args:
+            user_id (str): ID of existing user
+            token (str): Bearer token
+
+        Returns:
+            requests.Response: userId(str), username(str), books(list)
         """
         header = {
             'Authorization': f'Bearer {token}',

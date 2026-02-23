@@ -30,7 +30,8 @@ def test_book_data_not_logged_user(ui_book_no_login):
 @pytest.mark.not_logged_in
 @pytest.mark.positive
 def test_back_to_store_button(ui_book_no_login):
-    ui_book_no_login.press_go_to_book_store_button()
+    ui_book_no_login.press_back_to_store_button()
+    # ui_book_no_login.press_go_to_book_store_button()
     assert ui_book_no_login.check_url(const.book_store_url)
 
 
@@ -57,7 +58,7 @@ def test_login_button(ui_book_no_login):
     assert ui_book_no_login.check_url(
         const.book_url_format.format(ui_book_no_login.books[0]['isbn'])
     )
-    ui_book_no_login.driver.execute_script('window.scroll(0,0)')
+    ui_book_no_login.scroll_to(0)
     ui_book_no_login.press_login_button()
     assert ui_book_no_login.check_url(const.login_url)
 

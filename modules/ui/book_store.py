@@ -15,12 +15,18 @@ class BookStore(BasePage):
 
     # Book page
     def _get_alert(self):
+        """Return the alert present on the page.
+
+        Returns:
+            Alert: The currently present alert.
+        """
         alert = WebDriverWait(self.driver, 10).until(
             ec.alert_is_present(),
         )
         return alert
 
     def press_back_to_store_button(self) -> None:
+        """Click the 'Back to Store' button (available on most pages)."""
         r = WebDriverWait(self.driver, 5).until(
             ec.element_to_be_clickable(
                 const.book_store_page_id['back_to_store_button'])
@@ -28,6 +34,7 @@ class BookStore(BasePage):
         r.click()
 
     def press_add_to_collection_button(self) -> None:
+        """Click the 'Add to Collection' button on the book page."""
         r = WebDriverWait(self.driver, 5).until(
             ec.element_to_be_clickable(
                 const.book_store_page_id['Add_to_collection_button'])
@@ -39,7 +46,15 @@ class BookStore(BasePage):
             self,
             book_collection_status: bool,
     ) -> bool:
-        """book_collection_status - is book already in collection"""
+        """Check alert text depending on whether the book is already added.
+
+        Args:
+            book_collection_status (bool): True if the book is already in
+                the collection, False otherwise.
+
+        Returns:
+            bool: True if the alert text matches the expected status.
+        """
         alert = self._get_alert()
         text = alert.text
         logger.debug('alert text (book page): %s', text)
@@ -49,15 +64,21 @@ class BookStore(BasePage):
         elif book_collection_status is False:
             return text == const.alert_book_added_to_collection
 
-    def close_modal_window(self) -> None:
-        alert = self._get_alert()
-        alert.accept()
-
     def check_text(
             self,
             field_to_check: str,
             expected_text: str,
     ) -> bool:
+        """Check a specific book attribute matches expected text.
+
+        Args:
+            field_to_check (str): ISBN / Title, Sub_title / author / publisher
+             / total_pages / description / website
+            expected_text (str): _description_
+
+        Returns:
+            bool: True if the attribute matches `expected_text`.
+        """
         field_to_check = field_to_check.lower().strip() + '_id'
         r = WebDriverWait(self.driver, 5).until(
             ec.visibility_of_all_elements_located(

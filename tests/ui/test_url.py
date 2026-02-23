@@ -1,6 +1,8 @@
+# Tests are not valid
+
 import pytest
 from modules.ui.ui_constants import const
-from tests.test_data import data
+from modules.api.book_store import book_store
 
 
 @pytest.mark.ui
@@ -27,7 +29,8 @@ def test_profile_page(ui):
 @pytest.mark.ui
 @pytest.mark.ui_urls
 def test_book_page(ui):
-    ui.go_to_url(const.book_url_format.format(data.random_book_id))
+    book = book_store.get_random_book()
+    ui.go_to_url(const.book_url_format.format(book['book_id']))
     assert ui.check_title(const.error_page_title)
 
 

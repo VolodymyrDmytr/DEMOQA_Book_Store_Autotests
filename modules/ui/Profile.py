@@ -17,15 +17,21 @@ class Profile(BasePage):
         super().__init__()
 
     def _get_alert_profile(self):
+        """Return the browser alert object for the profile page.
+
+        Returns:
+            Alert: The currently present alert.
+        """
         r = WebDriverWait(self.driver, 5).until(
             ec.alert_is_present()
         )
         return r
 
     def press_go_to_book_store_button_profile(self) -> None:
+        """Click the 'Go to Book Store' button on the profile page."""
         while True:
             try:
-                self.driver.execute_script('window.scrollBy(0,90)')
+                self.scroll_lower(90)
                 r = WebDriverWait(self.driver, 5).until(
                     ec.element_to_be_clickable(
                         const.profile_page_id['go_to_book_store_button'])
@@ -39,19 +45,27 @@ class Profile(BasePage):
                 logger.info(
                     'StaleElementReferenceException error (go to store)'
                 )
-        self.driver.execute_script('window.scrollBy(0,0)')
+        self.scroll_to(0)
 
     def press_delete_account_button(self) -> None:
-        r = WebDriverWait(self.driver, 5).until(
-            ec.visibility_of_element_located(
-                const.profile_page_id['delete_account_button'])
-        )
-        r.click()
-
-    def press_delete_all_books_button(self) -> None:
+        """Click the delete account button."""
         while True:
             try:
-                self.driver.execute_script('window.scrollBy(0,90)')
+                r = WebDriverWait(self.driver, 5).until(
+                    ec.visibility_of_element_located(
+                        const.profile_page_id['delete_account_button'])
+                )
+                r.click()
+                break
+            except StaleElementReferenceException:
+                logger.info(
+                    'StaleElementReferenceException for delete acc button')
+
+    def press_delete_all_books_button(self) -> None:
+        """Click the 'Delete All Books' button."""
+        while True:
+            try:
+                self.scroll_lower(90)
                 r = WebDriverWait(self.driver, 10).until(
                     ec.element_to_be_clickable(
                         const.profile_page_id['delete_all_books_button'])
@@ -69,6 +83,11 @@ class Profile(BasePage):
             self,
             book_id: int,
     ) -> None:
+        """Click the delete button for a specific book.
+
+        Args:
+            book_id (int): ISBN of the book to delete.
+        """
         by, element = const.profile_page_id['delete_book_button_format']
         element = element.format(book_id)
         logger.debug('book id to delete: %s', book_id)
@@ -81,7 +100,11 @@ class Profile(BasePage):
             self,
             action: str,
     ) -> None:
-        """action = x / cancel / ok"""
+        """Perform an action on a modal dialog.
+
+        Args:
+            action (str): x / cancel / ok
+        """
         r = WebDriverWait(self.driver, 10,
                           ignored_exceptions=StaleElementReferenceException
                           ).until(
@@ -109,7 +132,15 @@ class Profile(BasePage):
             self,
             deleting: str,
     ) -> bool:
-        """deleting_type = one book / all books / account"""
+        """Check the modal dialog text on the profile page.
+
+        Args:
+            deleting (str): one book / all books / account
+
+        Returns:
+            bool: True if both modal title and text match the expected
+                values; otherwise False.
+        """
         deleting = deleting.lower().strip()
 
         if deleting == 'one book':
@@ -154,6 +185,7 @@ class Profile(BasePage):
             return False
 
     def accept_alert(self) -> None:
+        """Accept the currently shown alert."""
         alert = self._get_alert_profile()
         alert.accept()
 
@@ -161,7 +193,14 @@ class Profile(BasePage):
             self,
             alert_type: str
     ) -> bool:
-        """alert_type: one_book / all_books / all_books_no_book"""
+        """Check the text of a delete-book related alert.
+
+        Args:
+            alert_type (str): one_book / all_books / all_books_no_book
+
+        Returns:
+            bool: True if the alert text matches the expected message.
+        """
         alert_type = alert_type.lower().strip()
         if alert_type == 'one_book':
             msg = const.delete_one_book_alert

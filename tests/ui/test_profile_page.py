@@ -1,5 +1,6 @@
 import pytest
 from modules.ui.ui_constants import const
+from modules.api.book_store import book_store
 
 
 @pytest.mark.ui
@@ -35,7 +36,6 @@ def test_go_to_book_store_button(ui_profile):
 @pytest.mark.ui
 @pytest.mark.ui_profile_page
 @pytest.mark.positive
-@pytest.mark.debug
 def test_profile_book_search(ui_profile_with_books):
     ui_profile_with_books.fill_search_field(
         ui_profile_with_books.books[0]['title']
@@ -48,36 +48,39 @@ def test_profile_book_search(ui_profile_with_books):
     )
 
 
-# TODO тут нужен новый акк
-# @pytest.mark.ui
-# @pytest.mark.ui_profile_page
-# @pytest.mark.positive
-# def test_account_deleting(ui_register):
-#     ui_register.fill_register_form(
-#         faker.first_name(),
-#         faker.last_name(),
-#         ui_register.username,
-#         ui_register.password,
-#     )
-#     ui_register.press_register_button()
+@pytest.mark.ui
+@pytest.mark.ui_book_store
+@pytest.mark.negative
+@pytest.mark.parametrize(
+    'search_data', book_store.no_found_book_title_generator())
+def test_unsuccess_search_profile(ui_profile_with_books, search_data):
+    ui_profile_with_books.fill_search_field(search_data)
+    assert ui_profile_with_books.check_no_books_found()
 
-#     ui_register.press_delete_account_button()
 
-#     ui_register.actions_with_modal('ok')
+@pytest.mark.ui
+@pytest.mark.ui_profile_page
+@pytest.mark.positive
+def test_account_deleting(ui_profile_for_delete):
+    ui_profile_for_delete.wait_till_books_loaded()
+    ui_profile_for_delete.press_delete_account_button()
+    ui_profile_for_delete.actions_with_modal('ok')
+    ui_profile_for_delete.actions_with_modal('x')
+    ui_profile_for_delete.press_log_out_button()
 
-#     ui_register.fill_username_field(ui_register.username)
-#     ui_register.fill_password_field(ui_register.password)
-#     ui_register.press_login_button()
+    ui_profile_for_delete.fill_username_field(ui_profile_for_delete.username)
+    ui_profile_for_delete.fill_password_field(ui_profile_for_delete.password)
+    ui_profile_for_delete.press_login_button()
 
-#     assert ui_register.check_url(const.login_url)
+    assert ui_profile_for_delete.check_url(const.login_url)
+    assert ui_profile_for_delete.check_error_text()
 
 
 @pytest.mark.ui
 @pytest.mark.ui_profile_page
 @pytest.mark.positive
 def test_account_deleting_modal(ui_profile):
-    ui_profile.check_no_books_found()
-
+    ui_profile.wait_till_books_loaded()
     ui_profile.press_delete_account_button()
     assert ui_profile.check_modal_text('account')
 
@@ -92,12 +95,7 @@ def test_account_deleting_modal(ui_profile):
 @pytest.mark.ui_profile_page
 @pytest.mark.positive
 def test_book_deleting_modal(ui_profile_with_books):
-    assert ui_profile_with_books.check_is_book_expected(
-        1,
-        ui_profile_with_books.books[0]['title'],
-        ui_profile_with_books.books[0]['author'],
-        ui_profile_with_books.books[0]['publisher'],
-    )
+    ui_profile_with_books.wait_till_books_loaded()
 
     ui_profile_with_books.press_delete_book_button(
         ui_profile_with_books.books[0]['isbn'])
@@ -139,7 +137,6 @@ def test_book_deleting_modal(ui_profile_with_books):
 @pytest.mark.ui
 @pytest.mark.ui_profile_page
 @pytest.mark.positive
-@pytest.mark.debug
 def test_deleting_all_books_modal(ui_profile_with_books):
     assert ui_profile_with_books.check_is_book_expected(
         2,

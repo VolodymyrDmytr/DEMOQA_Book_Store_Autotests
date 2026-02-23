@@ -4,7 +4,7 @@ from modules.ui.profile import Profile
 from modules.ui.register_page import Register
 from modules.ui.table import Table
 from modules.ui.ui_constants import const
-from modules.faker_settings import faker
+from modules.faker_settings import faker, correct_password
 import logging
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import (StaleElementReferenceException,
@@ -20,10 +20,11 @@ class DemoQA(BookStore, LoginPage, Profile, Register, Table):
     def __init__(self, books=[]):
         super().__init__(),
         self.username = faker.user_name()
-        self.password = 'A&a1234567'
+        self.password = correct_password()
         self.books = books
 
     def go_to(self):
+        """Open the Book Store page."""
         self.go_to_url(const.base_url)
 
         max_i = 5
@@ -31,7 +32,7 @@ class DemoQA(BookStore, LoginPage, Profile, Register, Table):
 
         while i <= max_i:
             try:
-                self.driver.execute_script('window.scrollBy(0,90)')
+                self.scroll_lower(90)
                 r = WebDriverWait(self.driver, 5).until(
                     ec.visibility_of_all_elements_located(
                         const.base_page_element))
@@ -50,7 +51,7 @@ class DemoQA(BookStore, LoginPage, Profile, Register, Table):
         if i == 4:
             raise Exception("Failed to click element after retries")
 
-        self.driver.execute_script('window.scroll(0,0)')
+        self.scroll_to(0)
 
     def __str__(self):
         msg = 'Username: {}. Password: {}. Users book list: {}'

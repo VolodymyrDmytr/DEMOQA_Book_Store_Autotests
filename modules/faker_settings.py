@@ -2,7 +2,7 @@ from faker import Faker
 import re
 
 faker = Faker()
-# Faker.seed(123)
+Faker.seed(123)
 
 correct_password_setting = (15, True, True, True, True)
 password_pattern = ("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*["

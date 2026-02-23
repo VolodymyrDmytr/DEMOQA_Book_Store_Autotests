@@ -18,6 +18,11 @@ class Table(BasePage):
             self,
             search: str,
     ) -> None:
+        """Fill the search field on the Book Store or Profile pages.
+
+        Args:
+            search (str): Search text to enter.
+        """
         r = WebDriverWait(self.driver, 5).until(
             ec.visibility_of_element_located(
                 const.book_store_page_id['search_field'])
@@ -25,11 +30,13 @@ class Table(BasePage):
         r.send_keys(search)
 
     def click_previous_button(self) -> None:
+        """Click the 'Previous' pagination button."""
         r = self.driver.find_element(
             *const.book_store_page_id['previous_button'])
         r.click()
 
     def click_next_button(self) -> None:
+        """Click the 'Next' pagination button."""
         r = self.driver.find_element(*const.book_store_page_id['next_button'])
         r.click()
 
@@ -37,10 +44,16 @@ class Table(BasePage):
             self,
             button: str,
     ) -> bool:
-        """Returns True, if element is disable.
-        Button var takes Next / Previous"""
+        """Check the status of table navigation buttons.
+
+        Args:
+            button (str): Next / Previous
+
+        Returns:
+            bool: True if the specified button is disabled.
+        """
         button = button.lower().strip() + '_button'
-        self.driver.execute_script('window.scroll(0,700)')
+        self.scroll_to(700)
         r = WebDriverWait(self.driver, 5).until(
             ec.visibility_of_element_located(const.book_store_page_id[button])
         )
@@ -54,7 +67,19 @@ class Table(BasePage):
             author: str = "",
             publisher: str = "",
     ) -> bool:
-        """Returns True, if data on choosed row is expected"""
+        """Check whether expected information exists on a specific table row
+        (Book Store and Profile pages).
+
+        Args:
+            row (int): Row index to check.
+            title (str, optional): Expected title. Defaults to "".
+            author (str, optional): Expected author. Defaults to "".
+            publisher (str, optional): Expected publisher. Defaults to "".
+
+        Returns:
+            bool: True if the provided data matches the row contents.
+        """
+        """Returns  (Book store and profile pages)"""
         self.wait_till_books_loaded()
 
         logger.debug('Data to compare: title = %s, author = %s, publshr = %s',
@@ -95,6 +120,11 @@ class Table(BasePage):
             return False
 
     def check_no_books_found(self) -> bool:
+        """Check whether the table is empty (no books found).
+
+        Returns:
+            bool: True if the table is empty.
+        """
         r = WebDriverWait(self.driver, 5).until(
             ec.invisibility_of_element_located(
                 const.book_store_page_id['second_table_row'])
@@ -105,6 +135,11 @@ class Table(BasePage):
             self,
             book_title: str,
     ) -> None:
+        """Click a book link by its full title.
+
+        Args:
+            book_title (str): Full book title to click.
+        """
         by_element, text = const.book_store_page_id['book_link_by_name']
         logger.debug('Book title: %s', book_title)
 
@@ -113,7 +148,7 @@ class Table(BasePage):
 
         while i <= max_i:
             try:
-                self.driver.execute_script('window.scrollBy(0,120)')
+                self.scroll_lower(120)
                 r = WebDriverWait(self.driver, 5).until(
                     ec.element_to_be_clickable(
                         (by_element,
@@ -130,6 +165,11 @@ class Table(BasePage):
             raise Exception('Too many retries!')
 
     def check_are_all_images_loaded(self) -> bool:
+        """Check whether all books images are loaded on the page.
+
+        Returns:
+            bool: True if all images for books are loaded.
+        """
         result_list = []
         result = True
 
@@ -152,6 +192,9 @@ class Table(BasePage):
         return result
 
     def wait_till_books_loaded(self) -> None:
+        """Wait until the books table is updated to avoid modal window
+        interference while loading.
+        """
         r = WebDriverWait(self.driver, 5).until(
                 ec.visibility_of_all_elements_located(
                     const.book_store_page_id['table_rows']))
